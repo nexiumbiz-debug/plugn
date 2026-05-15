@@ -19,13 +19,15 @@ for forbidden in [
     'or die("Unable to open file!")',
     " or die(",
     "print_r(Yii::$app->request->queryParams)",
+    "mkdir($dirName, 0777, true)",
+    "mkdir($storeDir, 0777, true)",
 ]:
     if forbidden in block:
         raise SystemExit(f"Forbidden sitemap debug/hard-stop pattern remains: {forbidden}")
 
 required_patterns = [
-    r"mkdir\(\$dirName,\s*0777,\s*true\)",
-    r"mkdir\(\$storeDir,\s*0777,\s*true\)",
+    r"mkdir\(\$dirName,\s*0755,\s*true\)",
+    r"mkdir\(\$storeDir,\s*0755,\s*true\)",
     r"\$sitemap\s*=\s*fopen\(\$sitemapPath,\s*\"w\"\)",
     r"if\s*\(\$sitemap\s*===\s*false\)",
     r"fwrite\(\$sitemap,.*?\)\s*===\s*false",

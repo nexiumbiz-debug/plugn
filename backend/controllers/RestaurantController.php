@@ -998,13 +998,13 @@ class RestaurantController extends Controller {
         $storeDir = $dirName . "/" . $store->store_branch_name;
         $sitemapPath = $storeDir . "/sitemap.xml";
 
-        if (!is_dir($dirName) && !mkdir($dirName, 0777, true) && !is_dir($dirName)) {
+        if (!is_dir($dirName) && !mkdir($dirName, 0755, true) && !is_dir($dirName)) {
             Yii::error('[Sitemap > Runtime directory unavailable] RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
             Yii::$app->session->setFlash('errorResponse', 'Unable to prepare sitemap directory.');
             return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
         }
 
-        if (!is_dir($storeDir) && !mkdir($storeDir, 0777, true) && !is_dir($storeDir)) {
+        if (!is_dir($storeDir) && !mkdir($storeDir, 0755, true) && !is_dir($storeDir)) {
             Yii::error('[Sitemap > Store directory unavailable] Path: ' . $storeDir . ' RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
             Yii::$app->session->setFlash('errorResponse', 'Unable to prepare store sitemap directory.');
             return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
