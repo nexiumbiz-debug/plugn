@@ -69,6 +69,8 @@ required_patterns = [
     r"\$response\s*=\s*curl_exec\(\$ch\);",
     r"\$curlError\s*=\s*curl_error\(\$ch\);",
     r"\$httpCode\s*=\s*curl_getinfo\(\$ch,\s*CURLINFO_HTTP_CODE\);",
+    r"CURLOPT_CONNECTTIMEOUT,\s*5",
+    r"CURLOPT_TIMEOUT,\s*10",
     r"if\(\$response\s*===\s*false\)",
     r"if\(\$httpCode\s*<\s*200\s*\|\|\s*\$httpCode\s*>=\s*300\)",
     r"\$responseData\s*=\s*json_decode\(\$response,\s*true\);",
