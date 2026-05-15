@@ -1,3 +1,5 @@
+"""Guard EventManager SQS exception handling against response leaks."""
+
 from pathlib import Path
 import re
 
