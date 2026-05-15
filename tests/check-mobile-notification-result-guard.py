@@ -8,6 +8,7 @@ source = model.read_text(encoding="utf-8")
 
 
 def function_body(name: str) -> str:
+    """Return the PHP body for a public static method in MobileNotification."""
     match = re.search(rf"public static function {name}\s*\([^)]*\)\s*\{{", source)
     if not match:
         raise SystemExit(f"Could not locate {name}()")
@@ -27,6 +28,7 @@ def function_body(name: str) -> str:
 
 
 def active_php(source_text: str) -> str:
+    """Remove comments before scanning active PHP code for forbidden patterns."""
     without_block_comments = re.sub(r"/\*.*?\*/", "", source_text, flags=re.S)
     return re.sub(r"(?m)(^|[^:\"'])//[^\n]*", r"\1", without_block_comments)
 
