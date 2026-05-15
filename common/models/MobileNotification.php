@@ -26,11 +26,11 @@ class MobileNotification {
      */
     public static function notifyStore($heading, $data, $filters, $subtitle = '', $content = '')
     {
-        if(!isset(Yii::$app->params['oneSignalStoreAPPID'])) {
+        if(!isset(Yii::$app->params['oneSignalStoreAPPID']) || !isset(Yii::$app->params['oneSignalStoreAPIKey'])) {
             return false;
         }
 
-        self::sendNotification(
+        return self::sendNotification(
             Yii::$app->params['oneSignalStoreAPPID'],
             Yii::$app->params['oneSignalStoreAPIKey'],
             $heading,
@@ -57,11 +57,11 @@ class MobileNotification {
      */
     public static function notifyAgent($heading, $data, $filters, $subtitle = '', $content = '')
     {
-        if(!isset(Yii::$app->params['oneSignalAgentAPPID'])) {
+        if(!isset(Yii::$app->params['oneSignalAgentAPPID']) || !isset(Yii::$app->params['oneSignalAgentAPIKey'])) {
             return false;
         }
 
-        self::sendNotification(
+        return self::sendNotification(
             Yii::$app->params['oneSignalAgentAPPID'],
             Yii::$app->params['oneSignalAgentAPIKey'],
             $heading,
@@ -106,9 +106,6 @@ class MobileNotification {
         ];
 
         $fields = json_encode($fields);
-        // print("\nJSON sent:\n");
-        // print($fields);
-
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://onesignal.com/api/v1/notifications");
         curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json; charset=utf-8',
@@ -120,11 +117,27 @@ class MobileNotification {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 
-        curl_exec($ch);
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        /*print("\n\nJSON received:\n");
-    	print_r($response);
-    	print("\n");*/
+        if($response === false) {
+            Yii::error(
+                '[OneSignal > Notification request failed] ' . $curlError,
+                __METHOD__
+            );
+            return false;
+        }
+
+        if($httpCode < 200 || $httpCode >= 300) {
+            Yii::error(
+                '[OneSignal > Notification request failed] HTTP ' . $httpCode,
+                __METHOD__
+            );
+            return false;
+        }
+
+        return true;
     }
 }
