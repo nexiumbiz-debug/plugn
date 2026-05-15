@@ -345,8 +345,11 @@ class EventManager extends Component
                 Yii::debug("Message sent! Message ID: " . $result->get('MessageId'));
 
             } catch (AwsException $e) {
-                echo $e->getMessage();
-                Yii::debug("Error sending message: " . $e->getMessage());
+                Yii::error(
+                    '[EventManager > SQS send failed] AWS error code: ' . ($e->getAwsErrorCode() ?: 'n/a') .
+                    ' HTTP status: ' . ($e->getStatusCode() ?: 'n/a'),
+                    __METHOD__
+                );
             }
         }
     }
