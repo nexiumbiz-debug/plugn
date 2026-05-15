@@ -5,7 +5,10 @@ use common\models\AgentAssignment;
 /* @var $this yii\web\View */
 /* @var $model common\models\AgentAssignment */
 
-$frontendUrl = Yii::$app->params['frontendUrl'];
+$frontendUrl = Html::encode((string) Yii::$app->params['frontendUrl']);
+$agentName = Html::encode((string) $model->agent->agent_name);
+$restaurantName = Html::encode((string) $model->restaurant->name);
+$restaurantDomain = Html::encode((string) $model->restaurant->restaurant_domain);
 ?>
 
 
@@ -13,7 +16,7 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
     <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
       <head>
         <title>
-          <?= $model->restaurant->name ?> has added you as a team member on their Plugn store
+          <?= $restaurantName ?> has added you as a team member on their Plugn store
         </title>
         <!--[if !mso]><!-- -->
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -301,7 +304,7 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
       <div
          style="font-family:Proxima Nova, Arial, Arial, Helvetica, sans-serif;font-size:14px;line-height:24px;text-align:left;color:#000000;"
       >
-        Hi <?= $model->agent->agent_name ?>,
+        Hi <?= $agentName ?>,
       </div>
 
               </td>
@@ -315,7 +318,7 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
       <div
          style="font-family:Proxima Nova, Arial, Arial, Helvetica, sans-serif;font-size:14px;line-height:24px;text-align:left;color:#000000;"
       >
-        You have been added as a team member for the store <a href='<?= $model->restaurant->restaurant_domain ?>' style='color:#2F80ED; text-decoration:none;'><?= $model->restaurant->name ?></a>.
+        You have been added as a team member for the store <a href='<?= $restaurantDomain ?>' style='color:#2F80ED; text-decoration:none;'><?= $restaurantName ?></a>.
       </div>
 
               </td>

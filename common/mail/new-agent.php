@@ -5,7 +5,12 @@ use common\models\AgentAssignment;
 /* @var $this yii\web\View */
 /* @var $model common\models\AgentAssignment */
 
-$frontendUrl = Yii::$app->params['frontendUrl'];
+$frontendUrl = Html::encode((string) Yii::$app->params['frontendUrl']);
+$agentName = Html::encode((string) $model->agent->agent_name);
+$restaurantName = Html::encode((string) $model->restaurant->name);
+$restaurantDomain = Html::encode((string) $model->restaurant->restaurant_domain);
+$assignmentAgentEmail = Html::encode((string) $model->assignment_agent_email);
+$encodedPassword = Html::encode((string) $password);
 ?>
 
 
@@ -14,7 +19,7 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
     <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
       <head>
         <title>
-          You've been invited to manage <?= $model->restaurant->name ?>
+          You've been invited to manage <?= $restaurantName ?>
         </title>
         <!--[if !mso]><!-- -->
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -302,7 +307,7 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
       <div
          style="font-family:Proxima Nova, Arial, Arial, Helvetica, sans-serif;font-size:14px;line-height:24px;text-align:left;color:#000000;"
       >
-        Hello <?= $model->agent->agent_name ?>,
+        Hello <?= $agentName ?>,
       </div>
 
               </td>
@@ -316,7 +321,7 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
       <div
          style="font-family:Proxima Nova, Arial, Arial, Helvetica, sans-serif;font-size:14px;line-height:24px;text-align:left;color:#000000;"
       >
-        An account has been created for you on Plugn to manage <a href='<?= $model->restaurant->restaurant_domain ?>' style='color:#2F80ED; text-decoration:none;'><?= $model->restaurant->name ?></a>.
+        An account has been created for you on Plugn to manage <a href='<?= $restaurantDomain ?>' style='color:#2F80ED; text-decoration:none;'><?= $restaurantName ?></a>.
       </div>
 
               </td>
@@ -349,8 +354,8 @@ $frontendUrl = Yii::$app->params['frontendUrl'];
                            <th>Password</th>
                          </tr>
                          <tr>
-                           <td><?= $model->assignment_agent_email ?></td>
-                           <td><?= $password ?></td>
+                           <td><?= $assignmentAgentEmail ?></td>
+                           <td><?= $encodedPassword ?></td>
                          </tr>
       </table>
 
