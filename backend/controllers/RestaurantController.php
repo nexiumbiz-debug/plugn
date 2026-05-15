@@ -995,18 +995,42 @@ class RestaurantController extends Controller {
         $store = $this->findModel($id);
 
         $dirName = "../runtime/store";
-        if(!file_exists($dirName))
-          $createStoreFolder = mkdir($dirName);
+        $storeDir = $dirName . "/" . $store->store_branch_name;
+        $sitemapPath = $storeDir . "/sitemap.xml";
 
-        if (!file_exists( $dirName . "/" . $store->store_branch_name )) {
-          $myFolder = mkdir( $dirName . "/" . $store->store_branch_name);
+        if (!is_dir($dirName) && !mkdir($dirName, 0777, true) && !is_dir($dirName)) {
+            Yii::error('[Sitemap > Runtime directory unavailable] RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
+            Yii::$app->session->setFlash('errorResponse', 'Unable to prepare sitemap directory.');
+            return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
         }
 
-      $sitemap =  fopen($dirName . "/" .   $store->store_branch_name . "/sitemap.xml", "w") or die("Unable to open file!");
-      fwrite($sitemap, Yii::$app->fileGeneratorComponent->createSitemapXml($store->restaurant_uuid));
+        if (!is_dir($storeDir) && !mkdir($storeDir, 0777, true) && !is_dir($storeDir)) {
+            Yii::error('[Sitemap > Store directory unavailable] Path: ' . $storeDir . ' RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
+            Yii::$app->session->setFlash('errorResponse', 'Unable to prepare store sitemap directory.');
+            return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
+        }
+
+      $sitemap = fopen($sitemapPath, "w");
+      if ($sitemap === false) {
+          Yii::error('[Sitemap > File open failed] Path: ' . $sitemapPath . ' RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
+          Yii::$app->session->setFlash('errorResponse', 'Unable to create sitemap file.');
+          return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
+      }
+
+      if (fwrite($sitemap, Yii::$app->fileGeneratorComponent->createSitemapXml($store->restaurant_uuid)) === false) {
+          fclose($sitemap);
+          Yii::error('[Sitemap > File write failed] Path: ' . $sitemapPath . ' RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
+          Yii::$app->session->setFlash('errorResponse', 'Unable to write sitemap file.');
+          return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
+      }
       fclose($sitemap);
 
-      $fileToBeUploaded = file_get_contents($dirName .  "/" .   $store->store_branch_name  . "/sitemap.xml");
+      $fileToBeUploaded = file_get_contents($sitemapPath);
+      if ($fileToBeUploaded === false) {
+          Yii::error('[Sitemap > File read failed] Path: ' . $sitemapPath . ' RestaurantUuid: ' . $store->restaurant_uuid, __METHOD__);
+          Yii::$app->session->setFlash('errorResponse', 'Unable to read sitemap file.');
+          return $this->redirect(['view', 'id' => $store->restaurant_uuid]);
+      }
 
       // Encode the image string data into base64
       $data = base64_encode($fileToBeUploaded);
@@ -1026,8 +1050,8 @@ class RestaurantController extends Controller {
               $store->save(false);
             }
 
-            $dirPath = $dirName . '/'. $store->store_branch_name;
-            $file_pointer =  $dirPath . '/sitemap.xml';
+            $dirPath = $storeDir;
+            $file_pointer =  $sitemapPath;
 
             // Use unlink() function to delete a file
             if (!unlink($file_pointer)) {
