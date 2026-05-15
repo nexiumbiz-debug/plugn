@@ -28,7 +28,7 @@ def function_body(name: str) -> str:
 
 def active_php(source_text: str) -> str:
     without_block_comments = re.sub(r"/\*.*?\*/", "", source_text, flags=re.S)
-    return re.sub(r"//.*", "", without_block_comments)
+    return re.sub(r"(?m)(^|[^:\"'])//[^\n]*", r"\1", without_block_comments)
 
 
 notify_store = function_body("notifyStore")
@@ -69,6 +69,11 @@ required_patterns = [
     r"\$httpCode\s*=\s*curl_getinfo\(\$ch,\s*CURLINFO_HTTP_CODE\);",
     r"if\(\$response\s*===\s*false\)",
     r"if\(\$httpCode\s*<\s*200\s*\|\|\s*\$httpCode\s*>=\s*300\)",
+    r"\$responseData\s*=\s*json_decode\(\$response,\s*true\);",
+    r"json_last_error\(\)\s*!==\s*JSON_ERROR_NONE",
+    r"empty\(\$responseData\['id'\]\)",
+    r"!empty\(\$responseData\['errors'\]\)",
+    r"Notification response rejected",
     r"Yii::error\(",
     r"__METHOD__",
     r"return false;",

@@ -130,9 +130,21 @@ class MobileNotification {
             return false;
         }
 
+        $responseLog = substr($response, 0, 500);
+        $curlLog = $curlError ? ' Curl: ' . $curlError : '';
+
         if($httpCode < 200 || $httpCode >= 300) {
             Yii::error(
-                '[OneSignal > Notification request failed] HTTP ' . $httpCode,
+                '[OneSignal > Notification request failed] HTTP ' . $httpCode . $curlLog . ' Response: ' . $responseLog,
+                __METHOD__
+            );
+            return false;
+        }
+
+        $responseData = json_decode($response, true);
+        if(!is_array($responseData) || json_last_error() !== JSON_ERROR_NONE || empty($responseData['id']) || !empty($responseData['errors'])) {
+            Yii::error(
+                '[OneSignal > Notification response rejected] HTTP ' . $httpCode . $curlLog . ' Response: ' . $responseLog,
                 __METHOD__
             );
             return false;
