@@ -8,6 +8,7 @@ TEMPLATE = ROOT / "common" / "mail" / "payment-failed-html.php"
 
 
 def main() -> None:
+    """Verify the payment failure email template only renders encoded values."""
     source = TEMPLATE.read_text(encoding="utf-8")
 
     required = [
