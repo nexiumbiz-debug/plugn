@@ -3,7 +3,15 @@
 from pathlib import Path
 import re
 
-MODEL_PATH = Path("common/models/MobileNotification.php")
+
+MODEL = Path("common/models/MobileNotification.php")
+
+
+def read_model_source() -> str:
+    """Read the MobileNotification model with a clear failure if it moves."""
+    if not MODEL.exists():
+        raise SystemExit(f"MobileNotification.php not found at {MODEL}")
+    return MODEL.read_text(encoding="utf-8")
 
 
 def function_body(source_text: str, name: str) -> str:
@@ -15,142 +23,177 @@ def function_body(source_text: str, name: str) -> str:
     start = match.end() - 1
     depth = 0
     index = start
-    in_string = None
+    quote = ""
     escaped = False
-    in_line_comment = False
-    in_block_comment = False
+    line_comment = False
+    block_comment = False
 
     while index < len(source_text):
         char = source_text[index]
-        pair = source_text[index:index + 2]
+        next_char = source_text[index + 1] if index + 1 < len(source_text) else ""
 
-        if in_line_comment:
-            if char == "\n":
-                in_line_comment = False
+        if line_comment:
+            if char in "\r\n":
+                line_comment = False
             index += 1
             continue
-        if in_block_comment:
-            if pair == "*/":
-                in_block_comment = False
+
+        if block_comment:
+            if char == "*" and next_char == "/":
+                block_comment = False
                 index += 2
                 continue
             index += 1
             continue
-        if in_string:
+
+        if quote:
             if escaped:
                 escaped = False
             elif char == "\\":
                 escaped = True
-            elif char == in_string:
-                in_string = None
+            elif char == quote:
+                quote = ""
             index += 1
             continue
-        if pair == "//":
-            in_line_comment = True
-            index += 2
-            continue
-        if pair == "/*":
-            in_block_comment = True
-            index += 2
-            continue
-        if char == "#":
-            in_line_comment = True
+
+        if char in {"'", '"'}:
+            quote = char
+        elif char == "/" and next_char == "/":
+            line_comment = True
             index += 1
-            continue
-        if char in ("'", '"'):
-            in_string = char
+        elif char == "#":
+            line_comment = True
+        elif char == "/" and next_char == "*":
+            block_comment = True
             index += 1
-            continue
-        if char == "{":
+        elif char == "{":
             depth += 1
         elif char == "}":
             depth -= 1
             if depth == 0:
                 return source_text[start + 1:index]
+
         index += 1
 
     raise SystemExit(f"Could not parse {name}() body")
 
 
-def active_php(source_text: str) -> str:
-    """Remove comments before scanning active PHP code for forbidden patterns."""
-    without_block_comments = re.sub(r"/\*.*?\*/", "", source_text, flags=re.S)
-    return "\n".join(strip_line_comments(without_block_comments).splitlines())
+def strip_php_comments(source_text: str) -> str:
+    """Remove PHP comments while preserving strings such as URLs."""
+    result = []
+    index = 0
+    quote = ""
+    escaped = False
+    line_comment = False
+    block_comment = False
 
+    while index < len(source_text):
+        char = source_text[index]
+        next_char = source_text[index + 1] if index + 1 < len(source_text) else ""
 
-def strip_line_comments(source_text: str) -> str:
-    """Remove PHP line comments while preserving string literals such as URLs."""
-    stripped_lines = []
-    for line in source_text.splitlines():
-        in_single_quote = False
-        in_double_quote = False
-        escaped = False
+        if line_comment:
+            if char in "\r\n":
+                line_comment = False
+                result.append(char)
+            index += 1
+            continue
 
-        for index, char in enumerate(line):
+        if block_comment:
+            if char == "*" and next_char == "/":
+                block_comment = False
+                index += 2
+                continue
+            if char in "\r\n":
+                result.append(char)
+            index += 1
+            continue
+
+        if quote:
+            result.append(char)
             if escaped:
                 escaped = False
-                continue
-            if char == "\\" and (in_single_quote or in_double_quote):
+            elif char == "\\":
                 escaped = True
-                continue
-            if char == "'" and not in_double_quote:
-                in_single_quote = not in_single_quote
-                continue
-            if char == '"' and not in_single_quote:
-                in_double_quote = not in_double_quote
-                continue
-            if char == "/" and not in_single_quote and not in_double_quote and line[index:index + 2] == "//":
-                line = line[:index]
-                break
-            if char == "#" and not in_single_quote and not in_double_quote:
-                line = line[:index]
-                break
+            elif char == quote:
+                quote = ""
+            index += 1
+            continue
 
-        stripped_lines.append(line)
+        if char in {"'", '"'}:
+            quote = char
+            result.append(char)
+        elif char == "/" and next_char == "/":
+            line_comment = True
+            index += 1
+        elif char == "#":
+            line_comment = True
+        elif char == "/" and next_char == "*":
+            block_comment = True
+            index += 1
+        else:
+            result.append(char)
 
-    return "\n".join(stripped_lines)
+        index += 1
+
+    return "".join(result)
 
 
-def call_arguments(source_text: str, call_name: str):
-    """Yield argument text for function calls using balanced parentheses."""
-    pattern = re.compile(rf"{re.escape(call_name)}\s*\(")
+def active_php(source_text: str) -> str:
+    """Remove comments before scanning active PHP code for forbidden patterns."""
+    return "\n".join(strip_php_comments(source_text).splitlines())
 
-    for match in pattern.finditer(source_text):
-        start = match.end() - 1
-        depth = 0
-        in_string = None
+
+def call_args(source_text: str, call_name: str):
+    """Yield balanced argument strings for calls such as Yii::error(...)."""
+    search_from = 0
+    while True:
+        call_index = source_text.find(call_name, search_from)
+        if call_index == -1:
+            return
+
+        open_index = source_text.find("(", call_index + len(call_name))
+        if open_index == -1:
+            return
+        if source_text[call_index + len(call_name):open_index].strip():
+            search_from = call_index + len(call_name)
+            continue
+
+        depth = 1
+        index = open_index + 1
+        args_start = index
+        quote = ""
         escaped = False
 
-        for index in range(start, len(source_text)):
+        while index < len(source_text):
             char = source_text[index]
-            if in_string:
+
+            if quote:
                 if escaped:
                     escaped = False
                 elif char == "\\":
                     escaped = True
-                elif char == in_string:
-                    in_string = None
-                continue
-            if char in ("'", '"'):
-                in_string = char
-                continue
-            if char == "(":
+                elif char == quote:
+                    quote = ""
+            elif char in {"'", '"'}:
+                quote = char
+            elif char == "(":
                 depth += 1
             elif char == ")":
                 depth -= 1
                 if depth == 0:
-                    yield source_text[start + 1:index]
+                    yield source_text[args_start:index]
+                    search_from = index + 1
                     break
+
+            index += 1
         else:
             raise SystemExit(f"Could not parse {call_name}() arguments")
 
 
 def main() -> None:
-    """Validate OneSignal notification handling and logging safety."""
-    if not MODEL_PATH.exists():
-        raise SystemExit(f"MobileNotification.php not found at {MODEL_PATH}")
+    """Run the notification result guard."""
+    source = read_model_source()
 
-    source = MODEL_PATH.read_text(encoding="utf-8")
     notify_store = function_body(source, "notifyStore")
     notify_agent = function_body(source, "notifyAgent")
     send_notification = function_body(source, "sendNotification")
@@ -178,10 +221,12 @@ def main() -> None:
         if forbidden in active_send:
             raise SystemExit(f"Forbidden active notification debug/leak pattern remains: {forbidden}")
 
-    for error_call in call_arguments(active_send, "Yii::error"):
+    for error_call in call_args(active_send, "Yii::error"):
         for secret_pattern in ["$fields", "$apiKey", "Authorization"]:
             if secret_pattern in error_call:
-                raise SystemExit(f"Notification error logging includes sensitive request material: {secret_pattern}")
+                raise SystemExit(
+                    f"Notification error logging includes sensitive request material: {secret_pattern}"
+                )
 
     required_patterns = [
         r"\$response\s*=\s*curl_exec\(\$ch\);",
