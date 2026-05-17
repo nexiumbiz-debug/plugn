@@ -1,3 +1,5 @@
+"""Validate that agent invitation email templates escape dynamic values."""
+
 from pathlib import Path
 
 
@@ -47,6 +49,7 @@ CHECKS = {
 
 
 def main() -> None:
+    """Check required escaped snippets and reject raw template output."""
     failures = []
 
     for relative_path, expectations in CHECKS.items():
