@@ -30,7 +30,37 @@ def function_body(name: str) -> str:
 def active_php(source_text: str) -> str:
     """Remove comments before scanning active PHP code for forbidden patterns."""
     without_block_comments = re.sub(r"/\*.*?\*/", "", source_text, flags=re.S)
-    return re.sub(r"(?m)(^|[^:\"'])//[^\n]*", r"\1", without_block_comments)
+    return "\n".join(strip_line_comments(without_block_comments).splitlines())
+
+
+def strip_line_comments(source_text: str) -> str:
+    """Remove PHP line comments while preserving string literals such as URLs."""
+    stripped_lines = []
+    for line in source_text.splitlines():
+        in_single_quote = False
+        in_double_quote = False
+        escaped = False
+
+        for index, char in enumerate(line):
+            if escaped:
+                escaped = False
+                continue
+            if char == "\\" and (in_single_quote or in_double_quote):
+                escaped = True
+                continue
+            if char == "'" and not in_double_quote:
+                in_single_quote = not in_single_quote
+                continue
+            if char == '"' and not in_single_quote:
+                in_double_quote = not in_double_quote
+                continue
+            if char == "/" and not in_single_quote and not in_double_quote and line[index:index + 2] == "//":
+                line = line[:index]
+                break
+
+        stripped_lines.append(line)
+
+    return "\n".join(stripped_lines)
 
 
 notify_store = function_body("notifyStore")
